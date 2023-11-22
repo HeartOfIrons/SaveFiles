@@ -1,0 +1,45 @@
+--[[
+  BASIC ADMIN ESSENTIALS 2.0, ADMINLOGS PLUGIN
+    EXAMPLE: IF YOU RUN A COMMAND, (ex. :cmds) IT WILL PRINT OUT :cmds IN THE SPECIFIED CONNECTED CHANNEL. 
+              THIS IS USEFUL IF YOU HAVE A DC SERVER AND WANT TO ADMINISTRATE WITHOUT TOUCHING THE GAME.
+]]--
+
+local Plugin = function(...)
+	local Data = {...}
+	
+	local returnPermissions = Data[1][3]
+	local pluginEvent = Data[1][9]
+	
+	local tostring = tostring
+	local httpService = game:GetService('HttpService')
+		
+	local Configuration = {
+		{
+			Log = "Admin Logs",
+			Webhook_Url = "https://discord.com/api/webhooks/0",
+		},
+	}
+	
+	pluginEvent.Event:connect(function(Type,Data)
+		for _,Config in next,Configuration do
+			if Type == Config.Log then
+				local Succ,Msg
+				repeat
+					Succ,Msg = pcall(function()
+						local Table = {}
+						Table['username'] = (Data[1].Name or Data[1])
+						Table['content'] = (Data[2] or "nil")
+						
+						local JSONTable = httpService:JSONEncode(Table)
+						httpService:PostAsync(Config.Webhook_Url, JSONTable)
+					end)
+					wait(1)
+				until Succ and not Msg
+			end
+		end
+	end)
+
+	return
+end
+
+return Plugin
