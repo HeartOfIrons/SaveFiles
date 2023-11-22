@@ -1,0 +1,279 @@
+game.StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
+local Player = game.Players.LocalPlayer
+
+local Modules = script.Parent:WaitForChild("modules")
+local HoverFunctions = require(Modules:WaitForChild("HoverHandling"))
+local SettingFunctions = require(Modules:WaitForChild("SettingsTab"))
+local TabSwitching = require(Modules:WaitForChild("TabSwitching"))
+local Fade = require(Modules:WaitForChild("Fade"))
+local MouseEvents = require(Modules:WaitForChild("MouseHoverModule"))
+
+local TweenService = game:GetService("TweenService")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local Sounds = script.Parent:WaitForChild("sounds")
+local Container = script.Parent:WaitForChild("container")
+local Body = Container:WaitForChild("body")
+local Header = Container:WaitForChild("headerPortion")
+local Indicator = Header:WaitForChild("indicator")
+
+local PurchaseEvent = game:GetService("ReplicatedStorage"):WaitForChild("serverStuff"):WaitForChild("Purchase")
+local TeamEvent = game:GetService("ReplicatedStorage"):WaitForChild("serverStuff"):WaitForChild("Team")
+
+local function deploy(pos, team)
+	TeamEvent:FireServer(team)
+	Sounds["elementClick"]:Play()
+	TweenService:Create(script.Parent.black,TweenInfo.new(0.4),{BackgroundTransparency = 0}):Play()
+	task.wait(0.4)
+	Player.Character:WaitForChild("HumanoidRootPart").CFrame = CFrame.new(pos)
+	script.Parent.container.Visible = false
+	if script.Parent:FindFirstChild("background") then
+		script.Parent.background.Visible = false
+	end
+	local camera = workspace.CurrentCamera
+	camera.CameraType = Enum.CameraType.Custom
+	TweenService:Create(script.Parent.black,TweenInfo.new(0.4),{BackgroundTransparency = 1}):Play()
+	task.wait(0.4)
+	game.StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true)
+end
+
+	--[[
+	MISCELLANEOUS
+	]]
+
+Sounds["menuAmbience"]:Play()
+TweenService:Create(Sounds["menuAmbience"], TweenInfo.new(3), {Volume = 0.3}):Play()
+
+Y = 0.991;
+local GlobalData = {
+	Values = {
+		IndicatorPositions = {
+			["home"] = UDim2.fromScale(0.046,Y);
+			["settings"] = UDim2.fromScale(0.314,Y);
+			["store"] = UDim2.fromScale(0.174,Y);
+			["credits"] = UDim2.fromScale(0.446,Y);
+		};
+		Times = {
+			IndicatorTweenTime = 0.2;
+		};
+		Titles = {
+			["settings"] = "Setting Configurations";
+			["store"] = "Store";
+			["credits"] = "Game Credits";
+		};
+		--// THE TEXT THAT WILL APPEAR BEFORE YOUR USERNAME IN THE HOME PAGE
+		HomeMessages = {
+			"Good Evening,";
+			"Welcome,";
+			"Hello,";
+			"At Your Service,"
+		};
+	};
+};
+Body.home:SetAttribute("WelcomeText", GlobalData.Values.HomeMessages[math.random(1,#GlobalData.Values.HomeMessages)].." "..Player.Name..".")
+Body.title.Text = Body.home:GetAttribute("WelcomeText")
+
+	--[[
+	HOME TAB FUNCTIONS
+	]]
+
+for _,UI in pairs(Body.home.main:GetChildren()) do
+	if UI.ClassName == "Frame" then
+		local MouseEnter,MouseLeave = MouseEvents.MouseEnterLeaveEvent(UI.button)
+		MouseEnter:Connect(function()
+			HoverFunctions.ElementHoverIn(UI, UDim2.fromScale(1,0.566))
+		end)
+		MouseLeave:Connect(function()
+			HoverFunctions.ElementHoverOut(UI)
+		end)
+	end
+end
+
+	--[[
+	TAB SWITCHING
+	]]
+for _,UI in pairs(Container.headerPortion.listContainer:GetDescendants()) do
+	if UI.ClassName == "TextButton" then
+		UI.Activated:Connect(function()
+			Sounds["elementClick"]:Play()
+			local toSwitchTo = Body[UI.Parent.Name]
+			local Indicator = UI.Parent.Parent.Parent.indicator
+			for _,v2 in pairs(Container.headerPortion.listContainer:GetChildren()) do
+				if v2.ClassName == "TextLabel" then
+					if v2.TextColor3 == Color3.fromRGB(255,255,255) then
+						currentTab = Body[v2.Name]
+					end
+					v2.TextColor3 = Color3.fromRGB(212, 212, 212)
+				end
+			end
+			--print("Switched from "..currentTab.Name.." to "..toSwitchTo.Name)
+			Container.headerPortion.listContainer[toSwitchTo.Name].TextColor3 = Color3.fromRGB(255,255,255)
+			TweenService:Create(Indicator, TweenInfo.new(GlobalData.Values.Times.IndicatorTweenTime), {Position = GlobalData.Values.IndicatorPositions[toSwitchTo.Name]}):Play()
+			if toSwitchTo.Name ~= "home" then
+				Body.title.Text = GlobalData.Values.Titles[toSwitchTo.Name]
+			else 
+				Body.title.Text = Body.home:GetAttribute("WelcomeText")
+			end
+			TabSwitching.SwitchTabs(currentTab, toSwitchTo)
+		end)
+	end
+end
+
+	--[[
+	SETTINGS TAB
+	]]
+
+for _,v in pairs(Body.settings:GetDescendants()) do 
+	if v.ClassName == "TextButton" then
+		v.Activated:Connect(function()
+			Sounds["elementClick"]:Play()
+			SettingFunctions.SetSettingStatus(v.Parent.Parent, v.Parent.Name)
+		end)
+	end
+end
+
+	--[[
+	STORE TAB
+	]]
+for _,UI in pairs(Body.store:GetChildren()) do
+	if UI.ClassName == "Frame" then
+		local MouseEnter,MouseLeave = MouseEvents.MouseEnterLeaveEvent(UI.infoBox)
+		MouseEnter:Connect(function()
+			HoverFunctions.ElementHoverIn(UI, UDim2.fromScale(1,0.63))
+		end)
+		MouseLeave:Connect(function()
+			HoverFunctions.ElementHoverOut(UI)
+		end)
+		
+		local Title = UI.infoBox.title
+		local Price = UI.infoBox.Price
+		local Desc = UI.infoBox.desc
+		local Info = MarketplaceService:GetProductInfo(UI.Name, Enum.InfoType.GamePass)
+		Title.Text = Info.Name
+		Price.Text = "R$ "..tostring(Info.PriceInRobux)
+		Desc.Text = Info.Description
+		
+		UI.button.Activated:Connect(function()
+			Sounds["elementClick"]:Play()
+			PurchaseEvent:FireServer(tonumber(UI.Name))
+		end)
+	end
+end
+
+for _,UI in pairs(Body.store:GetDescendants()) do 
+	if UI.ClassName == "TextLabel" and UI.Name == "desc" then
+		local length = #UI.Text
+		if length > 135 then
+			local first135Chars = UI.Text:sub(1, 132)
+			UI.Text = first135Chars.."..."
+		end
+	end
+end
+
+	--[[
+	CREDITS TAB
+	]]
+for _,UI in pairs(Body.credits:GetDescendants()) do 
+	if UI.ClassName == "Frame" and UI.Parent.Name == "list" then
+		UI.avatar.Image = game:GetService("Players"):GetUserThumbnailAsync(tostring(UI.Name),Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size420x420)
+		local name = game:GetService("Players"):GetNameFromUserIdAsync(tonumber(UI.Name))
+		UI.TextLabel.Text = name
+	end
+end
+
+	--[[
+	DEPLOY & TEAMS HANDLER
+	]]
+for _,UI in pairs(Body.home:GetDescendants()) do
+	if UI.ClassName == "TextButton" then
+		UI.Activated:Connect(function()
+			Sounds["elementClick"]:Play()
+			DeployPos = UI.Parent:GetAttribute("TeleportCFrame")
+			TweenService:Create(script.Parent.black, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+			task.wait(0.2)
+			Container.headerPortion.Visible = false
+			Container.body:WaitForChild("title").Text = "Team Selection"
+			Container.body:WaitForChild("title").Position = UDim2.fromScale(0,-0.254)
+			for _,v in pairs(Container.body:GetChildren()) do
+				if v.ClassName == "Frame" or v.ClassName == "ScrollingFrame" then
+					v.Visible = false
+				end
+			end
+			Container.body.teams.Visible = true
+			TweenService:Create(script.Parent.black,TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+		end)
+	end
+end
+
+for _,UI in pairs(Body.teams:GetDescendants()) do 
+	if UI.ClassName == "Frame" and UI.Parent.Name == "list" then
+		local MouseEnter,MouseLeave = MouseEvents.MouseEnterLeaveEvent(UI)
+		MouseEnter:Connect(function()
+			if UI.indic.Visible == true then return end;
+			TweenService:Create(UI,TweenInfo.new(0.15),{BackgroundTransparency = 0.9}):Play()
+		end)
+		MouseLeave:Connect(function()
+			if UI.indic.Visible == true then return end;
+			TweenService:Create(UI,TweenInfo.new(0.15),{BackgroundTransparency = 1}):Play()
+		end)
+		
+		UI.TextButton.Activated:Connect(function()
+			for _,v in pairs(UI.Parent:GetChildren()) do
+				if v.ClassName == "Frame" then 
+					v.BackgroundTransparency = 1
+					v.indic.Visible = false
+				end
+			end
+			UI.BackgroundTransparency = 0.7
+			UI.indic.Visible = true
+			
+			local teamCards = UI.Parent.Parent.teams
+			for _,v in pairs(teamCards:GetChildren()) do
+				v.Visible = false
+			end
+			local current = teamCards[UI.Name]
+			current.Visible = true
+			
+			local MouseEnter,MouseLeave = MouseEvents.MouseEnterLeaveEvent(current.Deploy)
+			MouseEnter:Connect(function()
+				TweenService:Create(current.Deploy,TweenInfo.new(0.15),{BackgroundTransparency = 0.9}):Play()
+			end)
+			MouseLeave:Connect(function()
+				TweenService:Create(current.Deploy,TweenInfo.new(0.15),{BackgroundTransparency = 1}):Play()
+			end)
+			local StatsFrame = current.ScrollingFrame
+			local GroupLock = current:GetAttribute("GroupID")
+			local RankLock = current:GetAttribute("GroupRankID")
+			local TeamOnly = current:GetAttribute("TeamOnly")
+			local TeamReplica = false
+			----------------------------------------------------
+			if GroupLock == 0 or TeamOnly == false then
+				StatsFrame.grouplocked.Text = "Group Locked: No"
+				if RankLock == 0 then
+					StatsFrame.ranklocked.Text = "Group-Rank Locked: No"
+				end
+				if TeamOnly == true then
+				StatsFrame.teamlocked.Text = "Team Locked: No"
+				end
+				current.Deploy.TextButton.Activated:Connect(function()
+					deploy(DeployPos, game:GetService("Teams")[current.Name])
+				end)
+			else 
+				current.Deploy.TextButton.Activated:Connect(function()
+					if Player:IsInGroup(GroupLock) then
+						if RankLock == 0 then
+							deploy(DeployPos, game:GetService("Teams")[current.Name])
+						elseif RankLock >= 1 then
+							if Player:GetRankInGroup(GroupLock) >= RankLock then
+								deploy(DeployPos, game:GetService("Teams")[current.Name])
+							end
+						end
+					
+					end
+				end)
+			end
+		end)
+	end
+end
+
+print(currentTab)
