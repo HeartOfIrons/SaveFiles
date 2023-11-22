@@ -1,0 +1,599 @@
+local MarketplaceService = game:GetService("MarketplaceService")
+--
+local Lockers = workspace.LockerSystem:GetChildren()
+local LockerEvent = game.ReplicatedStorage.LockerEvent
+local LockerData = game.ReplicatedStorage.LockerData
+--
+local RType = "R6"
+--
+function Weld(Player, Clone, BodyPart)
+	Clone.Middle.CFrame = Player.Character[BodyPart].CFrame:ToWorldSpace(CFrame.new(0,0,0))
+	local Weld = Instance.new("WeldConstraint")
+	Weld.Parent = Clone.Middle
+	Weld.Part0 = Clone.Middle
+	Weld.Part1 = Player.Character[BodyPart]
+	Clone.Middle.Anchored = false
+end
+--
+function ClearOld(Player,BodyPart)
+	if Player.Character:FindFirstChild("Locker_"..BodyPart) then
+		Player.Character:FindFirstChild("Locker_"..BodyPart):Destroy()
+	end
+end
+--
+function CheckPermissions(Player, PermissionObject)
+	local RequireTeam = false
+	local GPLocked = false
+	local Gamepasses = PermissionObject.Gamepass
+	local TeamPerms = PermissionObject.TeamPerms
+	local GroupPerms = PermissionObject.GroupPerms
+	if PermissionObject.RequireTeam == true then
+		RequireTeam = true
+	end
+	if PermissionObject.IsGamepassLocked == true then
+		GPLocked = true
+	end
+	if GPLocked == true then
+		local OwnsGamepass = false
+		if Gamepasses[1] then
+			for i = 1,#Gamepasses do
+				if MarketplaceService:UserOwnsGamePassAsync(Player.UserId,Gamepasses[i]) then
+					OwnsGamepass = true
+				end	
+			end
+		end
+		--
+		if OwnsGamepass == true then
+			return true
+		else
+			return false
+		end
+	else -- If GamepassLocked is false
+		local Authorised = false
+		--
+		local function CheckTeams()
+			if TeamPerms[1] then
+				for x = 1,#TeamPerms do
+					if Player.Team.Name == TeamPerms[x] then
+						return true
+					end
+				end
+			end
+		end
+		--
+		if GroupPerms[1] then
+			if RequireTeam == true then
+				for i = 1,#GroupPerms do
+					local Split = string.split(GroupPerms[i],":")
+					if Player:GetRankInGroup(Split[1]) >= tonumber(Split[2]) then
+						if CheckTeams() == true then
+							Authorised = true
+							return true
+						else
+							return false
+						end
+					else
+						return false
+					end
+				end
+			else
+				for i = 1,#GroupPerms do
+					local Split = string.split(GroupPerms[i],":")
+					if Player:GetRankInGroup(Split[1]) >= tonumber(Split[2]) then
+						Authorised = true
+						return true
+					end
+				end
+			end
+		end
+		--
+		if Authorised == false then
+			if CheckTeams() == true then
+				Authorised = true
+				return true
+			end
+		end
+		if Authorised == false then
+			if Gamepasses[1] then
+				for x = 1,#Gamepasses do
+					if MarketplaceService:UserOwnsGamePassAsync(Player.UserId,Gamepasses[i]) then
+						return true
+					end	
+				end
+			end
+		end
+	end
+end
+--
+game.Players.PlayerAdded:Connect(function(Player)
+	local Clone = script.PlayerEquipped:Clone()
+	Clone.Parent = Player
+	Player.CharacterAdded:Connect(function(Char)
+		local HeadToDo = LockerData[RType].BodyParts.Head:FindFirstChild(Player.PlayerEquipped.Head.Equipped.Value)
+		local TorsoToDo = LockerData[RType].BodyParts.Torso:FindFirstChild(Player.PlayerEquipped.Torso.Equipped.Value)
+		local ArmsToDo = LockerData[RType].BodyParts.Arms:FindFirstChild(Player.PlayerEquipped.Arms.Equipped.Value)
+		local LegsToDo = LockerData[RType].BodyParts.Legs:FindFirstChild(Player.PlayerEquipped.Legs.Equipped.Value)
+		local UniformToDo = LockerData[RType].Uniforms:FindFirstChild(Player.PlayerEquipped.Uniforms.Equipped.Value)
+		local Outfit = Player.PlayerEquipped.Outfit.Equipped
+		local Tools = Player.PlayerEquipped.Tools:GetChildren()
+		--
+		local function SetPermissions(toDo)
+			if Outfit.Value == "Empty" then
+				local Return = require(toDo.Permissions)
+				return Return
+			else 
+				local Return = require(LockerData[RType].Outfits:FindFirstChild(Outfit.Value).Permissions)
+				return Return
+			end
+		end
+		if HeadToDo then
+			local Permissions = SetPermissions(HeadToDo)
+			if CheckPermissions(Player,Permissions) == true then
+				if Player.PlayerEquipped.Head.Equipped.Value ~= "Empty" then
+					ClearOld(Player, "Head")
+				end
+				--
+				local Clone = HeadToDo:Clone()
+				Clone.Parent = Player.Character
+				Weld(Player, Clone, "Head")
+				Clone.Name = "Locker_Head"
+				--
+				if HeadToDo.RemoveHats.Value == true then
+					local CharChilds = Player.Character:GetChildren()
+					for i = 1,#CharChilds do
+						if CharChilds[i].ClassName == "Accessory" then
+							CharChilds[i]:Destroy()
+						end
+					end
+					local Added do
+						Added = Char.ChildAdded:Connect(function(Child)
+							if Child.ClassName == "Accessory" then
+								wait()
+								Child:Destroy()
+							end
+							wait(10)
+							Added:Disconnect();
+						end)
+					end
+				end
+			end
+		end
+		if TorsoToDo then
+			local Permissions = SetPermissions(TorsoToDo)
+			if CheckPermissions(Player,Permissions) == true then
+				if RType == "R15" then
+					if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Torso")
+					end
+					--
+					local Clone = TorsoToDo:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Upper, "UpperTorso")
+					Weld(Player, Clone.Lower, "LowerTorso")
+					Clone.Name = "Locker_Torso"
+				else
+					if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Torso")
+					end
+					--
+					local Clone = TorsoToDo:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Upper, "Torso")
+					Clone.Name = "Locker_Torso"
+				end
+			end
+		end
+		if LegsToDo then
+			local Permissions = SetPermissions(LegsToDo)
+			if CheckPermissions(Player,Permissions) == true then
+				if RType == "R15" then
+					if Player.PlayerEquipped.Legs.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Legs")
+					end
+					--
+					local Clone = LegsToDo:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Left, "LeftLowerLeg")
+					Weld(Player, Clone.LeftUpper, "LeftUpperLeg")
+					Weld(Player, Clone.Right, "RightLowerLeg")
+					Weld(Player, Clone.RightUpper, "RightUpperLeg")
+					Clone.Name = "Locker_Legs"
+				else
+					if Player.PlayerEquipped.Legs.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Legs")
+					end
+					--
+					local Clone = LegsToDo:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Right, "Right Leg")
+					Weld(Player, Clone.Left, "Left Leg")
+					Clone.Name = "Locker_Legs"
+				end
+			end
+		end
+		if ArmsToDo then
+			local Permissions = SetPermissions(ArmsToDo)
+			if CheckPermissions(Player,Permissions) == true then
+				if RType == "R15" then
+					if Player.PlayerEquipped.Arms.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Arms")
+					end
+					--
+					local Clone = ArmsToDo:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Left, "LeftLowerArm")
+					Weld(Player, Clone.LeftUpper, "LeftUpperArm")
+					Weld(Player, Clone.Right, "RightLowerArm")
+					Weld(Player, Clone.RightUpper, "RightUpperArm")
+					Clone.Name = "Locker_Arms"
+				else
+					if Player.PlayerEquipped.Arms.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Arms")
+					end
+					--
+					local Clone = ArmsToDo:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Right, "Right Arm")
+					Weld(Player, Clone.Left, "Left Arm")
+					Clone.Name = "Locker_Arms"
+				end
+			end
+		end
+		if UniformToDo then
+			local Permissions = SetPermissions(UniformToDo)
+			if CheckPermissions(Player,Permissions) == true then
+				if Player.PlayerEquipped.Uniforms.Equipped.Value ~= "Empty" then
+					ClearOld(Player, "Pants")
+					ClearOld(Player, "Shirt")
+				end
+				if Player.Character:FindFirstChild("Shirt") then
+					Player.Character.Shirt:Destroy()
+				end
+				if Player.Character:FindFirstChild("Pants") then
+					Player.Character.Pants:Destroy()
+				end
+				local ShirtClone = UniformToDo.Shirt:Clone()
+				local PantsClone = UniformToDo.Pants:Clone()
+				ShirtClone.Name = "Locker_Shirt"
+				PantsClone.Name = "Locker_Pants"
+				ShirtClone.Parent = Player.Character
+				PantsClone.Parent = Player.Character
+				--
+				local Added do
+					Added = Char.ChildAdded:Connect(function(Child)
+						if Child.ClassName == "Shirt" or Child.ClassName == "Pants" then
+							if Child.Name ~= "Locker_Shirt" and Child.Name ~= "Locker_Pants" then
+								wait()
+								Child:Destroy()
+							end
+						end
+						wait(10)
+						Added:Disconnect();
+					end)
+				end
+			end
+		end
+		--
+		for i = 1,#Tools do
+			local ToolType = Tools[i]:GetChildren()
+			local Tool = Tools[i]:WaitForChild("Equipped").Value
+			local Type = Tools[i].Name
+			if Tool ~= "Empty" then
+				if Type == "Primary" or Type == "Secondary" then
+					local Found = LockerData.Tools[Type]:FindFirstChild(Tool)
+					local Permissions = require(Found.Permissions)
+					if CheckPermissions(Player,Permissions) == true then
+						local Clone = Found:Clone()
+						Clone.Parent = Player.Backpack
+					end
+				else
+					local Found = LockerData.Tools.Addons[Type]:FindFirstChild(Tool)
+					local Permissions = require(Found.Permissions)
+					if CheckPermissions(Player,Permissions) == true then
+						local Clone = Found:Clone()
+						Clone.Parent = Player.Backpack
+					end
+				end
+			end
+		end
+	end)
+end)
+--
+LockerEvent.OnServerEvent:Connect(function(Player,Type,Outfit)
+	if Type == "Apply" then
+		local Permissions = require(Outfit.Permissions)
+		if CheckPermissions(Player,Permissions) == true then
+			local BodyPart = Outfit.Parent
+			if BodyPart.Name == "Head" then
+				Player.PlayerEquipped.Outfit.Equipped.Value = "Empty"
+				if Player.PlayerEquipped.Head.Equipped.Value ~= "Empty" then
+					ClearOld(Player, "Head")
+				end
+				--
+				local Clone = Outfit:Clone()
+				Clone.Parent = Player.Character
+				Weld(Player, Clone, "Head")
+				Clone.Name = "Locker_Head"
+				--
+				if Outfit.RemoveHats.Value == true then 
+					local CharChilds = Player.Character:GetChildren()
+					for i = 1,#CharChilds do
+						if CharChilds[i].ClassName == "Accessory" then
+							CharChilds[i]:Destroy()
+						end
+					end
+				end
+				Player.PlayerEquipped.Head.Equipped.Value = Outfit.Name
+			elseif BodyPart.Name == "Torso" then
+				Player.PlayerEquipped.Outfit.Equipped.Value = "Empty"
+				if RType == "R15" then
+					if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Torso")
+					end
+					--
+					local Clone = Outfit:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Upper, "UpperTorso")
+					Weld(Player, Clone.Lower, "LowerTorso")
+					Clone.Name = "Locker_Torso"
+					Player.PlayerEquipped.Torso.Equipped.Value = Outfit.Name
+				else
+					if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Torso")
+					end
+					--
+					local Clone = Outfit:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Upper, "Torso")
+					Clone.Name = "Locker_Torso"
+					Player.PlayerEquipped.Torso.Equipped.Value = Outfit.Name
+				end
+			elseif BodyPart.Name == "Legs" then
+				Player.PlayerEquipped.Outfit.Equipped.Value = "Empty"
+				if RType == "R15" then
+					if Player.PlayerEquipped.Legs.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Legs")
+					end
+					--
+					local Clone = Outfit:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Left, "LeftLowerLeg")
+					Weld(Player, Clone.LeftUpper, "LeftUpperLeg")
+					Weld(Player, Clone.Right, "RightLowerLeg")
+					Weld(Player, Clone.RightUpper, "RightUpperLeg")
+					Clone.Name = "Locker_Legs"
+					Player.PlayerEquipped.Legs.Equipped.Value = Outfit.Name
+				else
+					if Player.PlayerEquipped.Legs.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Legs")
+					end
+					--
+					local Clone = Outfit:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Right, "Right Leg")
+					Weld(Player, Clone.Left, "Left Leg")
+					Clone.Name = "Locker_Legs"
+					Player.PlayerEquipped.Legs.Equipped.Value = Outfit.Name
+				end
+			elseif BodyPart.Name == "Arms" then
+				Player.PlayerEquipped.Outfit.Equipped.Value = "Empty"
+				if RType == "R15" then
+					if Player.PlayerEquipped.Arms.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Arms")
+					end
+					--
+					local Clone = Outfit:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Left, "LeftLowerArm")
+					Weld(Player, Clone.LeftUpper, "LeftUpperArm")
+					Weld(Player, Clone.Right, "RightLowerArm")
+					Weld(Player, Clone.RightUpper, "RightUpperArm")
+					Clone.Name = "Locker_Arms"
+					Player.PlayerEquipped.Arms.Equipped.Value = Outfit.Name
+				else
+					if Player.PlayerEquipped.Arms.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Arms")
+					end
+					--
+					local Clone = Outfit:Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone.Right, "Right Arm")
+					Weld(Player, Clone.Left, "Left Arm")
+					Clone.Name = "Locker_Arms"
+					Player.PlayerEquipped.Arms.Equipped.Value = Outfit.Name
+				end
+			end
+			if BodyPart.Name == "Outfits" then
+				local Arms = Outfit.Arms:GetChildren()
+				local Legs = Outfit.Legs:GetChildren()
+				local Torso = Outfit.Torso:GetChildren()
+				local Head = Outfit.Head:GetChildren()
+				local Uniform = Outfit.Uniform:GetChildren()
+				--
+				Player.PlayerEquipped.Outfit.Equipped.Value = Outfit.Name
+				--
+				if Arms[1] then
+					if RType == "R15" then
+						if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+							ClearOld(Player, "Arms")
+						end
+						--
+						local Clone = LockerData[RType].BodyParts.Arms:FindFirstChild(Arms[1].Name):Clone()
+						Clone.Parent = Player.Character
+						Weld(Player, Clone.Left, "LeftLowerArm")
+						Weld(Player, Clone.LeftUpper, "LeftUpperArm")
+						Weld(Player, Clone.Right, "RightLowerArm")
+						Weld(Player, Clone.RightUpper, "RightUpperArm")
+						Clone.Name = "Locker_Arms"
+						Player.PlayerEquipped.Torso.Equipped.Value = Outfit.Arms[Arms[1].Name].Name
+					else
+						if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+							ClearOld(Player, "Arms")
+						end
+						--
+						local Clone = LockerData[RType].BodyParts.Arms:FindFirstChild(Arms[1].Name):Clone()
+						Clone.Parent = Player.Character
+						Weld(Player, Clone.Right, "Right Arm")
+						Weld(Player, Clone.Left, "Left Arm")
+						Clone.Name = "Locker_Arms"
+						Player.PlayerEquipped.Torso.Equipped.Value = Outfit.Arms[Arms[1].Name].Name
+					end
+				end
+				if Legs[1] then
+					if RType == "R15" then
+						if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+							ClearOld(Player, "Legs")
+						end
+						--
+						local Clone = LockerData[RType].BodyParts.Legs:FindFirstChild(Legs[1].Name):Clone()
+						Clone.Parent = Player.Character
+						Weld(Player, Clone.Left, "LeftLowerLeg")
+						Weld(Player, Clone.LeftUpper, "LeftUpperLeg")
+						Weld(Player, Clone.Right, "RightLowerLeg")
+						Weld(Player, Clone.RightUpper, "RightUpperLeg")
+						Clone.Name = "Locker_Legs"
+						Player.PlayerEquipped.Torso.Equipped.Value = Outfit.Legs[Legs[1].Name].Name
+					else
+						if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+							ClearOld(Player, "Legs")
+						end
+						--
+						local Clone = LockerData[RType].BodyParts.Legs:FindFirstChild(Legs[1].Name):Clone()
+						Clone.Parent = Player.Character
+						Weld(Player, Clone.Right, "Right Leg")
+						Weld(Player, Clone.Left, "Left Leg")
+						Clone.Name = "Locker_Legs"
+						Player.PlayerEquipped.Torso.Equipped.Value = Outfit.Legs[Legs[1].Name].Name
+					end
+				end
+				if Torso[1] then
+					if RType == "R15" then
+						if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+							ClearOld(Player, "Torso")
+						end
+						--
+						local Clone = LockerData[RType].BodyParts.Torso:FindFirstChild(Torso[1].Name):Clone()
+						Clone.Parent = Player.Character
+						Weld(Player, Clone.Upper, "UpperTorso")
+						Weld(Player, Clone.Lower, "LowerTorso")
+						Clone.Name = "Locker_Torso"
+						Player.PlayerEquipped.Torso.Equipped.Value = Outfit.Torso[Torso[1].Name].Name
+					else
+						if Player.PlayerEquipped.Torso.Equipped.Value ~= "Empty" then
+							ClearOld(Player, "Torso")
+						end
+						--
+						local Clone = LockerData[RType].BodyParts.Torso:FindFirstChild(Torso[1].Name):Clone()
+						Clone.Parent = Player.Character
+						Weld(Player, Clone.Upper, "Torso")
+						Clone.Name = "Locker_Torso"
+						Player.PlayerEquipped.Torso.Equipped.Value = Outfit.Torso[Torso[1].Name].Name
+					end
+				end
+				if Head[1] then
+					if Player.PlayerEquipped.Head.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Head")
+					end
+					--
+					local Clone = LockerData[RType].BodyParts.Head:FindFirstChild(Head[1].Name):Clone()
+					Clone.Parent = Player.Character
+					Weld(Player, Clone, "Head")
+					Clone.Name = "Locker_Head"
+					--
+					if Clone.RemoveHats.Value == true then 
+						local CharChilds = Player.Character:GetChildren()
+						for i = 1,#CharChilds do
+							if CharChilds[i].ClassName == "Accessory" then
+								CharChilds[i]:Destroy()
+							end
+						end
+					end
+					Player.PlayerEquipped.Head.Equipped.Value = Outfit.Head[Head[1].Name].Name
+				end
+				if Uniform[1] then
+					if Player.PlayerEquipped.Uniforms.Equipped.Value ~= "Empty" then
+						ClearOld(Player, "Pants")
+						ClearOld(Player, "Shirt")
+					end
+					if Player.Character:FindFirstChild("Shirt") then
+						Player.Character.Shirt:Destroy()
+					end
+					if Player.Character:FindFirstChild("Pants") then
+						Player.Character.Pants:Destroy()
+					end
+					local ShirtClone = LockerData[RType].Uniforms:FindFirstChild(Uniform[1].Name).Shirt:Clone()
+					local PantsClone = LockerData[RType].Uniforms:FindFirstChild(Uniform[1].Name).Pants:Clone()
+					ShirtClone.Name = "Locker_Shirt"
+					PantsClone.Name = "Locker_Pants"
+					ShirtClone.Parent = Player.Character
+					PantsClone.Parent = Player.Character
+					--
+					Player.PlayerEquipped.Uniforms.Equipped.Value = Outfit.Uniform[Uniform[1].Name].Name
+				end
+			end
+		end
+	elseif Type == "Tool" then
+		local Permissions = require(Outfit.Permissions)
+		if CheckPermissions(Player,Permissions) == true then
+			Player.PlayerEquipped.Tools[Outfit.Parent.Name].Equipped.Value = Outfit.Name
+			local CharChilds = Player.Character:GetChildren()
+			for o = 1,#CharChilds do
+				local Child = CharChilds[o]
+				if Child.ClassName == "Tool" then
+					if Child:FindFirstChild("Category") then
+						if Outfit.Parent.Name == Child.Category.Value then
+							Child:Destroy()
+						end
+					end
+				end
+			end
+			local PlayerChilds = Player.Backpack:GetChildren()
+			for z = 1,#PlayerChilds do
+				local Child = PlayerChilds[z]
+				if Child.ClassName == "Tool" then
+					if Child:FindFirstChild("Category") then
+						if Outfit.Parent.Name == Child.Category.Value then
+							Child:Destroy()
+						end
+					end
+				end
+			end
+			--
+			local Clone = Outfit:Clone()
+			Clone.Parent = Player.Backpack
+		end
+	elseif Type == "Close" then
+		Player.PlayerGui.LockerGui:Destroy()
+	elseif Type == "Uniform" then
+		local Permissions = require(Outfit.Permissions)
+		if CheckPermissions(Player,Permissions) == true then
+			if Player.PlayerEquipped.Uniforms.Equipped.Value ~= "Empty" then
+				ClearOld(Player, "Pants")
+				ClearOld(Player, "Shirt")
+			end
+			if Player.Character:FindFirstChild("Shirt") then
+				Player.Character.Shirt:Destroy()
+			end
+			if Player.Character:FindFirstChild("Pants") then
+				Player.Character.Pants:Destroy()
+			end
+			local ShirtClone = Outfit.Shirt:Clone()
+			local PantsClone = Outfit.Pants:Clone()
+			ShirtClone.Name = "Locker_Shirt"
+			PantsClone.Name = "Locker_Pants"
+			ShirtClone.Parent = Player.Character
+			PantsClone.Parent = Player.Character
+			--
+			Player.PlayerEquipped.Uniforms.Equipped.Value = Outfit.Name
+		end
+	end
+end)
+--
+for i = 1,#Lockers do
+	Lockers[i].Proxy.ProximityPrompt.Triggered:Connect(function(Player)
+		if not Player.PlayerGui:FindFirstChild("LockerGui") then
+			local Clone = script.LockerGui:Clone()
+			Clone.Parent = Player.PlayerGui
+		end
+	end)
+end
