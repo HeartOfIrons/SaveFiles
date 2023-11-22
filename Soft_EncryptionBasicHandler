@@ -1,0 +1,10 @@
+local smc = script.Parent.keycode.keycode1 -- 3
+local smg = script.Parent.keycode.keycode4 -- 5
+
+
+
+if smc = smg and smg - smc = smg then -- if 3 = 5 and 5 - 3 = 5 then
+smg + smc = smc + smg -- 5 + 3 = 3 + 5 -- (this makes no fucking sense)
+else
+smc + smg = smg + smc -- reversal ^^
+end
