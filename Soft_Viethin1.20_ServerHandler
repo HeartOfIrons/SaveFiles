@@ -1,0 +1,443 @@
+--workspace.AutoJointsMode = Enum.AutoJointsMode.LegacyImplicit
+
+local OriginalC0 = CFrame.new(0, 1, 0, -1, -0, -0, 0, 0, 1, 0, 1, 0)
+
+local TweenService = game:GetService("TweenService")
+local C,N =1,1
+local SEs = game.ReplicatedStorage.ServerEvents
+local CEs = game.ReplicatedStorage.ClientEvents
+
+-- Frontier Security ;)
+
+local charset = {}  do 
+    for c = 48, 57  do table.insert(charset, string.char(c)) end
+    for c = 65, 90  do table.insert(charset, string.char(c)) end
+    for c = 97, 122 do table.insert(charset, string.char(c)) end
+end
+
+local function MakeToken()
+	local oString = ""
+	for i=1,math.random(20,35) do
+		oString = oString .. charset[math.random(1,#charset)]
+	end
+	return oString
+end
+
+local function matchKey(pl, ke)
+	local isMatch = script[pl.Name].PC.Value == ke
+	return isMatch
+end
+
+--init relevant info
+game.Players.PlayerAdded:connect(function(newPlayer)
+	local folder = Instance.new("Folder", script)
+	folder.Name = newPlayer.Name
+	local passcode = Instance.new("StringValue", folder)
+	passcode.Name = "PC"
+	passcode.Value = MakeToken()
+	newPlayer.ChildAdded:connect(function(c)
+		if c:IsA("Backpack") then
+			c.ChildAdded:connect(function(oc)
+				if (oc:IsA("Tool") or oc:IsA("HopperBin")) and oc:FindFirstChild("Animation") then
+					wait()
+					CEs.SendKey:FireClient(newPlayer,passcode.Value)
+				end
+			end)
+		end
+	end)
+end)
+
+game.Players.PlayerRemoving:connect(function(oldPlayer)
+	if script:FindFirstChild(oldPlayer.Name) then
+		script[oldPlayer.Name]:Destroy()
+	end
+end)
+
+--Damage
+
+SEs.Damage.OnServerEvent:connect(function(P,key,Damage,Hum,Plr)	
+	if not matchKey(P,key) then return end
+	local C
+	if Damage:IsA("Tool") then C = Damage:WaitForChild("Animation").Damage:Clone() else C = Damage:Clone() end
+	if Plr then C.Player.Value = Plr end
+	C.Parent,C.Disabled = Hum
+end)
+
+SEs.ChangeVal.OnServerEvent:connect(function(P,key,Val,ValTo)
+	if not matchKey(P,key) then return end
+	Val.Value = ValTo
+end)
+
+SEs.FireClient.OnServerEvent:Connect(function(P,key,Event,v1,v2,v3,v4,v5,v6,v7,v8)
+	if not matchKey(P,key) then return end
+    CEs[Event]:FireAllClients(v1,v2,v3,v4,v5,v6,v7,v8)
+end)
+
+SEs.Crouch.OnServerEvent:Connect(function(P,key,CRC,chr)
+	if not matchKey(P,key) then return end
+	Crouch(CRC,chr)
+end)
+
+SEs.Projectile.OnServerEvent:connect(function(Player,Hit,HitPos)
+
+if Hit then
+	local Part = Instance.new("Part", Player.Character)
+	Part.Name = "BulletImpact"
+	Part.Shape,Part.Material, Part.TopSurface, Part.BottomSurface = "Ball",Enum.Material.Metal, "Smooth", "Smooth"
+	Part.Anchored, Part.CanCollide, Part.Size = true, false, Vector3.new(0.2,0.2,0.2)
+	Part.CFrame = CFrame.new(HitPos,Player.Character.Head.Position)
+	Part.Transparency = 1
+
+	local ImpactSound = Instance.new("Sound",Part)
+	local Partic
+	local Color = false
+    if Hit.Parent:FindFirstChild("HumanoidLink") or Hit.Parent:FindFirstChild("Humanoid") or Hit.Parent.Parent:FindFirstChild("Humanoid") or (Hit.Parent.Parent ~= game and Hit.Parent.Parent.Parent:FindFirstChild("Humanoid")) then
+		Partic = SEs.Projectile.Blood:Clone()
+		ImpactSound.SoundId = "http://www.roblox.com/asset/?id=133758570"
+-- Blood				
+		elseif Hit.Material.Name == "Wood" or Hit.Material.Name == "WoodPlanks" then
+			Partic = SEs.Projectile.Wood:Clone()
+			ImpactSound.SoundId = "http://www.roblox.com/asset/?id=133758630"
+-- Wood
+		elseif Hit.Material.Name == "Grass" then
+			Partic = SEs.Projectile.Dirt:Clone()
+			Partic.EmissionDirection = "Top"
+			ImpactSound.SoundId = "http://www.roblox.com/asset/?id=133758545"
+-- Dirt			
+		elseif Hit.Material.Name == "Sand" then
+			Partic = SEs.Projectile.Dirt:Clone()
+			Partic.EmissionDirection = "Top"
+			Color = true
+			ImpactSound.SoundId = "http://www.roblox.com/asset/?id=133758545"
+-- Sand			
+		elseif Hit.Material.Name == "Ice" or Hit.Transparency >= 0.5 then
+			Partic = SEs.Projectile.Dirt:Clone()
+			Color = true
+			ImpactSound.SoundId = "http://www.roblox.com/asset/?id=133758600"
+-- Ice
+		elseif Hit.Material.Name == "Metal" or Hit.Material.Name == "CorrodedMetal" or Hit.Material.Name == "DiamondPlate" or Hit.Material.Name == "Foil" then
+			Partic = SEs.Projectile.Dirt:Clone()
+			Color = true
+			ImpactSound.SoundId = "http://www.roblox.com/asset/?id=133758612"
+-- Metal
+		elseif Hit.Material.Name == "Plastic" or Hit.Material.Name == "SmoothPlastic" or Hit.Material.Name == "Fabric" then
+			Partic = SEs.Projectile.Dirt:Clone()
+			Color = true
+			ImpactSound.SoundId = "http://www.roblox.com/asset/?id=142082166"
+-- Plastic
+		elseif Hit.Material.Name == "Brick" or Hit.Material.Name == "Pebble" or Hit.Material.Name == "Cobblestone" or Hit.Material.Name == "Concrete" or Hit.Material.Name == "Granite" or Hit.Material.Name == "Marble" or Hit.Material.Name == "Slate" then
+			Partic = SEs.Projectile.Dirt:Clone()
+			Color = true
+			ImpactSound.SoundId = "http://www.roblox.com/asset/?id=142082166"
+-- Brick
+			end
+
+	if Partic then Partic.Parent = Part Partic.Name = "Dirt" end
+
+	TweenService:Create(Part,TweenInfo.new(5),{Size = Vector3.new(0.05,0.05,0.05)}):Play()
+
+	if Part:FindFirstChild("Dirt") then
+		if Color then Part.Dirt.Color = ColorSequence.new(Hit.Color,Hit.Color) end
+		Part.Dirt.Enabled = true
+    	wait(0.5)
+		Part.Dirt.Enabled = false
+	end	
+
+	ImpactSound.Pitch = math.rad(5,15)/10
+	ImpactSound:Play()
+	game:GetService("Debris"):AddItem(Part,  5)
+end
+end)
+
+SEs.ProjectileExplosion.OnServerEvent:connect(function(Player,Hit,HitPos,Tool)
+
+if Hit then
+	local Part = Instance.new("Part", Player.Character)
+	Part.Name = "BulletImpact"
+	Part.Shape,Part.Material, Part.TopSurface, Part.BottomSurface = "Ball",Enum.Material.Metal, "Smooth", "Smooth"
+	Part.Anchored, Part.CanCollide, Part.Size = true, false, Vector3.new(0.2,0.2,0.2)
+	Part.CFrame = CFrame.new(HitPos,Player.Character.Head.Position)
+	Part.Transparency = 1
+	local explosion = Instance.new("Explosion")
+ 	explosion.BlastRadius = 10
+ 	explosion.BlastPressure = 100000
+  	explosion.Position = Part.Position
+  	explosion.Parent = Part
+	
+	
+
+	TweenService:Create(Part,TweenInfo.new(5),{Size = Vector3.new(0.05,0.05,0.05)}):Play()
+
+	
+
+
+	game:GetService("Debris"):AddItem(Part,  5)
+end
+end)
+
+
+
+SEs.Equip.OnServerEvent:connect(function(plr,Tool,w)
+	local chr = plr.Character
+	local C,N =1,1
+
+	-- Set welds
+	local fakehead = chr.Head:Clone()
+	fakehead.face:Destroy()
+	fakehead.Mesh:Destroy()
+	fakehead.Transparency, fakehead.Parent, fakehead.Name = 1, chr, "FakeHead"
+	local arms = {chr:FindFirstChild("Left Arm"), chr:FindFirstChild("Right Arm")}
+	local head = chr:FindFirstChild("Head")
+	local torso = chr:FindFirstChild("Torso")
+	local hrp = chr:FindFirstChild("HumanoidRootPart")
+	local neck = torso:FindFirstChild("Neck")
+	local fakeneck = neck:Clone()
+	fakeneck.Part0, fakeneck.Part1 = hrp, fakehead
+	fakeneck.Parent, fakeneck.Name = fakehead, "FakeNeck"
+	fakeneck.C0 = OriginalC0
+
+	local tilt = head:Clone()
+	tilt.CanCollide = false
+	tilt.face:Destroy()
+	tilt.Mesh:Destroy()
+	tilt.Transparency, tilt.Name, tilt.Parent = 1, "Tilt", chr
+	local tiltweld = Instance.new("Motor6D", tilt)
+	tiltweld.Name = "Mtiltweld"
+	tiltweld.Part0, tiltweld.Part1 = tilt, fakehead
+	tiltweld.C0 = CFrame.new(0,0,0)
+
+	--Remove useless joints
+	for _,v in ipairs(fakehead:GetChildren()) do
+		if v:IsA("JointInstance") and v ~= fakeneck then
+			v:Destroy()
+		end
+	end
+	for _,v in ipairs(tilt:GetChildren()) do
+		if v:IsA("JointInstance") and v ~= tiltweld then
+			v:Destroy()
+		end
+	end
+	for _,v in pairs(torso:GetChildren()) do
+		if v.Name == "Mweld1" or v.Name == "Mweld2" then 
+			v.Parent = nil
+		end
+	end
+	for _,v in pairs(arms[1]:GetChildren()) do
+		if v.Name == "Mweld3" then 
+			v.Parent = nil
+		end
+	end
+	for _,v in pairs(arms[2]:GetChildren()) do
+		if v.Name == "Mweld3" then 
+			v.Parent = nil
+		end
+	end
+	--Set weld CFrame
+	if arms ~= nil and torso ~= nil then
+		local sh = {torso:FindFirstChild("Left Shoulder"), torso:FindFirstChild("Right Shoulder"), torso.Parent.HumanoidRootPart:FindFirstChild("RootJoint")}
+		if sh ~= nil then
+			local yes = true
+			if yes then
+				yes = false
+				local weld1 = Instance.new("Motor6D")
+				sh[1].Part1 = nil
+				weld1.Name = "Mweld1"
+				weld1.Part0 = tilt
+				weld1.Parent = torso
+				weld1.Part1 = arms[1]
+				weld1.C1 = w[1]
+				local weld2 = Instance.new("Motor6D")
+				sh[2].Part1 = nil
+				weld2.Name = "Mweld2"
+				weld2.Part0 = tilt
+				weld2.Parent = torso
+				weld2.Part1 = arms[2]
+				weld2.C1 = w[2]
+				if w[3] then --Handle the extra weld
+					local weld3 = arms[2]:waitForChild("Mweld3")
+					weld3.Name = "Mweld3"
+					weld3.Part0 = tilt
+					weld3.C1 = w[3]
+					weld3.C0 = CFrame.new(0,0,0)
+				end
+
+				for _,Child in pairs(arms[2]:GetChildren()) do
+					if Child:IsA("Texture") or Child:IsA("Decal") then
+						Child.Transparency = 1
+					end
+				end
+
+				if chr.HumanoidRootPart:FindFirstChild("Mtweld") then chr.HumanoidRootPart:FindFirstChild("Mtweld"):Destroy() end
+					local tweld = Instance.new("Motor6D")
+					sh[3].Part1 = nil
+					tweld.Name = "Mtweld"
+					tweld.Part0 = torso.Parent.HumanoidRootPart
+					tweld.Parent = torso.Parent.HumanoidRootPart
+					tweld.Part1 = torso
+					tweld.C1 = CFrame.new(0,0,0) * CFrame.fromEulerAnglesXYZ(0,0,0)
+				end
+		end
+	end
+end)
+
+SEs.UnEquip.OnServerEvent:connect(function(plr,Tool)
+	local C,N =1,1
+	local chr = plr.Character
+	local arms = {chr:FindFirstChild("Left Arm"), chr:FindFirstChild("Right Arm")}
+	local fakehead = chr:WaitForChild("FakeHead")
+	local head = chr:FindFirstChild("Head")
+	local torso = chr:FindFirstChild("Torso")
+	local hrp = chr:FindFirstChild("HumanoidRootPart")
+	local neck = chr.Torso:FindFirstChild("Neck")
+	local fakeneck = fakehead:WaitForChild("FakeNeck")
+	local tilt = chr:WaitForChild("Tilt")
+	local tiltweld = tilt:WaitForChild("Mtiltweld")
+
+	fakehead:Destroy()
+	tilt:Destroy()
+	if arms ~= nil and torso ~= nil then
+	if not chr.Torso:FindFirstChild("Left Shoulder") then
+		local Motor = Instance.new("Motor6D", torso)
+		Motor.Name = "Left Shoulder"
+		Motor.Part0, Motor.Part1 = torso, torso.Parent["Left Arm"]
+		Motor.MaxVelocity = 0.1
+		Motor.C0 = CFrame.new(-1, 0.5, 0, -0, -0, -1, 0, 1, 0, 1, 0, 0)
+		Motor.C1 = CFrame.new(0.5, 0.5, 0, -0, -0, -1, 0, 1, 0, 1, 0, 0)
+	end
+	if not chr.Torso:FindFirstChild("Right Shoulder") then
+		local Motor = Instance.new("Motor6D", torso)
+		Motor.Name = "Right Shoulder"
+		Motor.Part0, Motor.Part1 = torso, torso.Parent["Right Arm"]
+		Motor.MaxVelocity = 0.1
+		Motor.C0 = CFrame.new(1, 0.5, 0, 0, 0, 1, 0, 1, 0, -1, -0, -0)
+		Motor.C1 = CFrame.new(-0.5, 0.5, 0, 0, 0, 1, 0, 1, 0, -1, -0, -0)
+	end
+	
+	if Tool:FindFirstChild("Muzzle") then
+ 	   Tool.Muzzle.Flash.Enabled = false
+ 	   Tool.Muzzle.Flame.Enabled = false			
+ 	   Tool.Muzzle.MuzzleSmoke.Enabled = false
+	end
+	if Tool:FindFirstChild("PanMuzzle") then
+		Tool.PanMuzzle.Smoke.Enabled = false
+	end
+
+	local sh = {chr.Torso:FindFirstChild("Left Shoulder"), chr.Torso:FindFirstChild("Right Shoulder")}
+	if sh ~= nil then
+
+		local yes = true
+		if yes then
+			yes = false
+
+			if chr.HumanoidRootPart:FindFirstChild("Mtweld") then
+				chr.HumanoidRootPart:FindFirstChild("Mtweld").Parent = nil
+			end
+
+			for _,v in pairs(torso:GetChildren()) do
+				if v.Name == "Mweld1" or v.Name == "Mweld2" then 
+					v.Parent = nil
+				end
+			end
+			for _,v in pairs(arms[1]:GetChildren()) do
+				if v.Name == "Mweld3" then 
+					v.Parent = nil
+				end
+			end
+			for _,v in pairs(arms[2]:GetChildren()) do
+				if v.Name == "Mweld3" then 
+					v.Parent = nil
+				end
+			end
+			
+			sh[1].Part1 = arms[1]
+			sh[2].Part1 = arms[2]
+			for _,Child in pairs(arms[2]:GetChildren()) do
+				if Child:IsA("Texture") or Child:IsA("Decal") then
+					Child.Transparency = 0
+				end
+			end
+			if hrp:FindFirstChild("RootJoint") then
+				hrp.RootJoint.Part1 = torso
+			else
+				local RootJoint = Instance.new("Motor6D",hrp)
+				RootJoint.MaxVelocity, RootJoint.Name = 0.1, "RootJoint"
+				RootJoint.Part0, RootJoint.Part1 = hrp,torso
+			end
+			neck.C0=OriginalC0
+		end
+	else
+		print("sh")
+	end
+else
+	print("arms")
+end
+	if Tool.Animation.CRC.Value == true then
+		Crouch(Tool.Animation.CRC,chr,true)
+	end
+end)
+
+function Crouch(CRC,chr,Uep)
+	local torso = chr.Torso
+	if CRC.Parent.Parent.Parent ~= chr and not Uep then return end
+	if Uep then chr.Humanoid.WalkSpeed = 16 end
+	local legs = {chr:FindFirstChild("Left Leg"), chr:FindFirstChild("Right Leg")}
+	if legs ~= nil then
+		local lsh = {torso:FindFirstChild("Left Hip"), torso:FindFirstChild("Right Hip")}
+		if lsh ~= nil then
+			local yes = true
+			if yes then 
+				yes = false
+				if not CRC.Value then
+					CRC.Value = true					
+					for _,v in pairs(torso:GetChildren()) do
+						if v.Name == "Legs4days1" or v.Name == "Legs4days2" then
+						v:Destroy()
+						end
+					end
+					lsh[1].Part1 = nil
+					lsh[2].Part1 = nil
+
+					local cweld1 = Instance.new("Weld")
+					cweld1.Part0 = torso
+					cweld1.Parent = torso
+					cweld1.Part1 = legs[1]
+					cweld1.Name = "Legs4days1"
+					legs[1].CanCollide = true
+
+					local cweld2 = Instance.new("Weld")
+					cweld2.Part0 = torso
+					cweld2.Parent = torso
+					cweld2.Part1 = legs[2]
+					cweld2.Name = "Legs4days2"
+					legs[2].CanCollide = true
+
+                    cweld1.C1 = CFrame.new(0.5,0,0) * CFrame.fromEulerAnglesXYZ(0,0,0)* CFrame.new(0,2,0) 
+                    cweld2.C1 = CFrame.new(-0.5,0,0) * CFrame.fromEulerAnglesXYZ(0,0,0)* CFrame.new(0,2,0)					
+
+
+					TweenService:Create(cweld1,TweenInfo.new(0.3),
+						{C1=CFrame.new(0.5,0+((0.35)),0+((1))) * CFrame.fromEulerAnglesXYZ(math.rad(0)+math.rad(15),0,0)* CFrame.new(0,2-((1.5)),0)}):Play()
+					TweenService:Create(cweld2,TweenInfo.new(0.3),
+						{C1=CFrame.new(-0.5,0+((0.25)),0+((0.9))) * CFrame.fromEulerAnglesXYZ(math.rad(0)+math.rad(75),0,0)* CFrame.new(0,2-((1.5)),0)}):Play()
+
+				elseif CRC.Value then
+					CRC.Value = false
+					local cweld1 = torso:FindFirstChild("Legs4days1")
+					local cweld2 = torso:FindFirstChild("Legs4days2")
+					TweenService:Create(cweld1,TweenInfo.new(0.3),
+						{C1 = CFrame.new(0.5,0,0) * CFrame.fromEulerAnglesXYZ(0,0,0)* CFrame.new(0,2,0)}):Play()
+					TweenService:Create(cweld2,TweenInfo.new(0.3),
+   						 {C1 = CFrame.new(-0.5,0,0) * CFrame.fromEulerAnglesXYZ(0,0,0)* CFrame.new(0,2,0)}):Play()
+					wait(0.3)
+
+					if legs then
+						lsh[1].Part1 = legs[1]
+						lsh[2].Part1 = legs[2]
+						if cweld1 then cweld1.Parent = nil end
+						if cweld2 then cweld2.Parent = nil end
+					end
+				end			
+			end
+		end
+	end
+end
