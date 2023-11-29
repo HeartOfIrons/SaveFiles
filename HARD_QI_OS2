@@ -1,0 +1,262 @@
+--[ LICENSE ]--
+--[[
+	MIT License
+	
+	Copyright (c) 2023 Acrementos (Acrementos) and Copyright (c) 2023 Alibical (Alibical)
+	
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+--]]
+--[ LICENSE ]--
+
+
+--[ NOTES ]--
+
+-- {0.383, 0},{1.124, 0}
+-- Don't touch anything unless you know what your doing.
+
+--[ NOTES END ]--
+
+--[ VARIABLES ]--
+
+local UserUI = script.Parent.UserUI
+local KeySys = script.Parent.KeySystem
+
+--[ DRAGGER: USERUI ]--
+
+local UserInputService = game:GetService("UserInputService")
+local runService = (game:GetService("RunService"));
+
+local gui = UserUI
+
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function Lerp(a, b, m)
+	return a + (b - a) * m
+end;
+
+local lastMousePos
+local lastGoalPos
+local DRAG_SPEED = (8); -- // The speed of the UI darg.
+local function Update(dt)
+	if not (startPos) then return end;
+	if not (dragging) and (lastGoalPos) then
+		gui.Position = UDim2.new(startPos.X.Scale, Lerp(gui.Position.X.Offset, lastGoalPos.X.Offset, dt * DRAG_SPEED), startPos.Y.Scale, Lerp(gui.Position.Y.Offset, lastGoalPos.Y.Offset, dt * DRAG_SPEED))
+		return 
+	end;
+
+	local delta = (lastMousePos - UserInputService:GetMouseLocation())
+	local xGoal = (startPos.X.Offset - delta.X);
+	local yGoal = (startPos.Y.Offset - delta.Y);
+	lastGoalPos = UDim2.new(startPos.X.Scale, xGoal, startPos.Y.Scale, yGoal)
+	gui.Position = UDim2.new(startPos.X.Scale, Lerp(gui.Position.X.Offset, xGoal, dt * DRAG_SPEED), startPos.Y.Scale, Lerp(gui.Position.Y.Offset, yGoal, dt * DRAG_SPEED))
+end;
+
+gui.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = gui.Position
+		lastMousePos = UserInputService:GetMouseLocation()
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+gui.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+runService.Heartbeat:Connect(Update)
+
+--[ DRAGGER: USERUI END ]--
+
+--[ DRAGGER: KEYSYSTEM ]--
+
+local UserInputService = game:GetService("UserInputService")
+local runService = (game:GetService("RunService"));
+
+local gui = KeySys
+
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function Lerp(a, b, m)
+	return a + (b - a) * m
+end;
+
+local lastMousePos
+local lastGoalPos
+local DRAG_SPEED = (8); -- // The speed of the UI darg.
+local function Update(dt)
+	if not (startPos) then return end;
+	if not (dragging) and (lastGoalPos) then
+		gui.Position = UDim2.new(startPos.X.Scale, Lerp(gui.Position.X.Offset, lastGoalPos.X.Offset, dt * DRAG_SPEED), startPos.Y.Scale, Lerp(gui.Position.Y.Offset, lastGoalPos.Y.Offset, dt * DRAG_SPEED))
+		return 
+	end;
+
+	local delta = (lastMousePos - UserInputService:GetMouseLocation())
+	local xGoal = (startPos.X.Offset - delta.X);
+	local yGoal = (startPos.Y.Offset - delta.Y);
+	lastGoalPos = UDim2.new(startPos.X.Scale, xGoal, startPos.Y.Scale, yGoal)
+	gui.Position = UDim2.new(startPos.X.Scale, Lerp(gui.Position.X.Offset, xGoal, dt * DRAG_SPEED), startPos.Y.Scale, Lerp(gui.Position.Y.Offset, yGoal, dt * DRAG_SPEED))
+end;
+
+gui.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = gui.Position
+		lastMousePos = UserInputService:GetMouseLocation()
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+gui.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+runService.Heartbeat:Connect(Update)
+
+--[ DRAGGER: KEYSYSTEM END ]--
+
+--[[ BUTTON CONTROL ]]--
+
+local Buttons = {
+	'_QI-1PRIORITY-MainPageB',
+	'_QI-2PRIORITY-SettingsB',
+	'_QI-3PRIORITY-ShopB',
+	'_QI-CharacterB',
+	'_QI-ExecutorB',
+	'_QI-NSFW_AnimationsB',
+	'_QI-NSFW_UIB',
+	'_QI-ScriptsB',
+	'_QI-Tools1B'
+}
+
+local Frames = {
+	'MainPageA',
+	'SettingsA',
+	'ShopA',
+	'CharacterA',
+	'ExecutorA',
+	'NSFWAnimationsA',
+	'NSFWUserInterfaceA',
+	'ScriptsA',
+	'Tools1A'
+}
+
+local function Counting(num)
+	for i, frame in pairs(UserUI["_QI-PageContainer"]:GetChildren()) do
+		if frame.ClassName == 'Frame' then
+			if frame.Name == Frames[num] then
+				frame.Visible = true
+			else
+				frame.Visible = false
+			end
+		end
+	end
+end
+
+for i, val in pairs(UserUI["_QI-ButtonContainer"]["_QI-Buttons"]:GetChildren()) do
+	if val.ClassName == 'TextButton' then
+		val.MouseButton1Click:Connect(function()
+			if val.Name == Buttons[1] then
+				Counting(1)
+			elseif val.Name == Buttons[2] then
+				Counting(2)
+			elseif val.Name == Buttons[3] then
+				Counting(3)
+			elseif val.Name == Buttons[4] then
+				Counting(4)
+			elseif val.Name == Buttons[5] then
+				Counting(5)
+			elseif val.Name == Buttons[6] then
+				Counting(6)
+			elseif val.Name == Buttons[7] then
+				Counting(7)
+			elseif val.Name == Buttons[8] then
+				Counting(8)
+			elseif val.Name == Buttons[9] then
+				Counting(9)
+			elseif val.Name == Buttons[10] then
+				Counting(10)
+			elseif val.Name == Buttons[11] then
+				Counting(11)
+			elseif val.Name == Buttons[12] then
+				Counting(12)
+			elseif val.Name == Buttons[13] then
+				Counting(13)
+			elseif val.Name == Buttons[14] then
+				Counting(14)
+			elseif val.Name == Buttons[15] then
+				Counting(15)
+			elseif val.Name == Buttons[16] then
+				Counting(16)
+			elseif val.Name == Buttons[17] then
+				Counting(17)
+			elseif val.Name == Buttons[18] then
+				Counting(18)
+			elseif val.Name == Buttons[19] then
+				Counting(19)
+			elseif val.Name == Buttons[20] then
+				Counting(20)
+			elseif val.Name == Buttons[21] then
+				Counting(21)
+			elseif val.Name == Buttons[22] then
+				Counting(22)
+			elseif val.Name == Buttons[23] then
+				Counting(23)
+			elseif val.Name == Buttons[24] then
+				Counting(24)
+			elseif val.Name == Buttons[25] then
+				Counting(25)
+			elseif val.Name == Buttons[26] then
+				Counting(26)
+			elseif val.Name == Buttons[27] then
+				Counting(27)
+			elseif val.Name == Buttons[28] then
+				Counting(28)
+			elseif val.Name == Buttons[29] then
+				Counting(29)
+			elseif val.Name == Buttons[30] then
+				Counting(30)
+			elseif val.Name == Buttons[31] then
+				Counting(31)
+end
+		end)
+	end
+end
