@@ -1,0 +1,340 @@
+--!nolint GlobalUsedAsLocal
+--!nolint TableOperations
+-- thanks cassie for helping me out on these nolints i never knew ( sarcs, https://luau-lang.org/lint )
+
+-- Held by https://www.apache.org/licenses/LICENSE-2.0.txt (Apache License 2.0), do not remove this instance or it will go against said directories in the Licensing.
+
+-- TH-BETA: MBLUR --
+BlurAmount = 10;
+Camera = game.Workspace.CurrentCamera;
+Last = Camera.CFrame.lookVector;
+Blur = Instance.new("BlurEffect", Camera);
+game.Workspace.Changed:connect(function(p1)
+	if p1 == "CurrentCamera" then
+		Camera = game.Workspace.CurrentCamera;
+		if not Blur or not Blur.Parent then
+			Blur = Instance.new("BlurEffect", Camera);
+			return;
+		end;
+	else
+		return;
+	end;
+	Blur.Parent = Camera;
+end);
+game:GetService("RunService").Heartbeat:connect(function()
+	if not Blur or Blur.Parent == nil then
+		Blur = Instance.new("BlurEffect", Camera);
+	end;
+	Blur.Size = math.abs((Camera.CFrame.lookVector - Last).magnitude) * BlurAmount;
+	Last = Camera.CFrame.lookVector;
+end);
+
+
+
+-- TH-BETA: MSG O KICK --
+local Player = game.Players.LocalPlayer
+local PlayerHealth = Player.Character.Humanoid.Health
+local Death = false
+
+local MsgK = {
+
+"[001: You served a good life.]",
+"[002: Your weapon will continue war.]",
+"[003: You'll survive next time.]",
+"[004: History repeats.]"
+
+}
+local function getMsgK()
+	local index = math.random(1, #MsgK)
+	return MsgK[index]
+end
+
+-- TH-BETA: GLASER --
+
+local lasers = {}
+local t1
+local t2
+local function lerp(v0,v1,t)
+	return (1 - t) * v0 + t * v1
+end
+local function cframe(p,c)
+	if p then
+		if p:IsA('BasePart') then
+			if c then
+				p.CFrame = c
+			end
+			return p.CFrame
+		elseif p:IsA('Attachment') then
+			if c then
+				if p.Name ~= "1" and p.Name ~= "2" then
+					p.WorldCFrame = c
+				elseif p.Name == "2" then
+					p.WorldCFrame = c*CFrame.new(0,0.05,0)
+				elseif p.Name == "1" then
+					p.WorldCFrame = c*CFrame.new(0,-0.05,0)
+				end
+			end
+			return p.WorldCFrame
+		end
+	end
+end
+function checkLaser(v)
+	if v:FindFirstChild('From') and v:FindFirstChild('To') then
+		if v:IsDescendantOf(game.Players.LocalPlayer.Character) or (v:FindFirstChild('Enabled') and not v.Enabled.Value) then
+			local from = v:FindFirstChild('From')
+			local to = v:FindFirstChild('To')
+			if v:FindFirstChild('1') and v:FindFirstChild('2') then
+				t1 = v:FindFirstChild('1')
+				t2 = v:FindFirstChild('2')
+				tr = v:FindFirstChild('To'):FindFirstChild('Trail')
+				t1cf = cframe(t1)
+				t2cf = cframe(t2)
+				cframe(t1,cframe(from))
+				cframe(t2,cframe(from))
+			end
+			for _,v2 in pairs(v:GetDescendants()) do
+				if v2:IsA('BillboardGui') or v2:IsA('Beam') or v2:IsA('PointLight') or v2:IsA('SurfaceLight') or v2:IsA('SpotLight') or v2:IsA('Trail') then
+					v2.Enabled = false
+				end
+			end
+			cframe(to,cframe(from))
+		else
+			local from = v:FindFirstChild('From')
+			local to = v:FindFirstChild('To')
+			if v:FindFirstChild('1') and v:FindFirstChild('2') then
+				t1 = v:FindFirstChild('1')
+				t2 = v:FindFirstChild('2')
+				tr = v:FindFirstChild('To'):FindFirstChild('Trail')
+				t1cf = cframe(t1)
+				t2cf = cframe(t2)
+			end
+
+			local fromcf = cframe(from)
+			local tocf = cframe(to)
+
+
+			local r = Ray.new(fromcf.p,fromcf.LookVector*500)
+
+			local ignoreList = {v:FindFirstAncestorOfClass('Model') or v}
+			if v:IsDescendantOf(workspace.CurrentCamera) then
+				table.insert(ignoreList,workspace.CurrentCamera)
+				table.insert(ignoreList,game.Players.LocalPlayer.Character)
+			end
+
+			local f,fp
+
+			local function cast()
+				f,fp = workspace:FindPartOnRayWithIgnoreList(r,ignoreList)
+				if f and ((f.Transparency*(f.LocalTransparencyModifier+1)) > .1) then
+					table.insert(ignoreList,#ignoreList+1,f)
+					cast()
+				end
+			end
+			cast()
+
+			cframe(to,CFrame.new(fp) * (tocf-tocf.p))
+			if t2 ~= nil then
+				cframe(t1,CFrame.new(fp) * (t1cf-t1cf.p))
+				cframe(t2,CFrame.new(fp) * (t2cf-t2cf.p))
+			end
+
+			for _,v2 in pairs(v:GetDescendants()) do
+				if v2:IsA('BillboardGui') or v2:IsA('Beam') or v2:IsA('PointLight') or v2:IsA('SurfaceLight') or v2:IsA('SpotLight') or v2:IsA('Trail') then
+					v2.Enabled = true
+				end
+			end
+			if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild('Head') and f == game.Players.LocalPlayer.Character.Head and (workspace.CurrentCamera.CFrame.p-workspace.CurrentCamera.Focus.p).Magnitude < 0.9 then
+				for _,v2 in pairs(to:GetDescendants()) do
+					if v2:IsA('BillboardGui') or v2:IsA('Beam') or v2:IsA('Trail') then
+						v2.Enabled = false
+					end
+				end
+			end
+			if v.From:FindFirstChild('Blind') then
+				for _,g in pairs(v.From:GetChildren()) do
+					if g.Name == 'Blind' then
+						local blind = g
+						local sizeuse = 0
+						table.insert(ignoreList,workspace.CurrentCamera)
+						local r2 = Ray.new(v.From.WorldPosition,workspace.CurrentCamera.CFrame.p-v.From.WorldPosition)
+						local f,fp
+						local function cast()
+							f,fp = workspace:FindPartOnRayWithIgnoreList(r2,ignoreList)
+							if f and f.Transparency+f.LocalTransparencyModifier > 0 then
+								table.insert(ignoreList,f)
+								f = nil
+								cast()
+							end
+						end
+						cast()
+						if not f then
+							local anglemax = blind.Angle.Value
+							local sizemax = blind.MaxSize.Value
+
+							local a,b = CFrame.new(v.From.WorldPosition,workspace.CurrentCamera.CFrame.p).LookVector,v.From.WorldCFrame.LookVector
+
+							local angle = math.acos(a:Dot(b))
+							angle = math.deg(angle)
+
+							if angle <= anglemax then
+								local min,max,fac = sizemax,0,angle/anglemax
+								--local lerpfac = min+((max-min)/fac)
+								sizeuse = lerp(sizemax,0,angle/anglemax)
+							end
+						end
+						local distance = (workspace.CurrentCamera.CFrame.p-v.From.WorldPosition).Magnitude/2.8
+						local intensity = 1/(distance^2)
+						intensity = intensity*100
+
+						if blind:FindFirstChild('IgnoreShrink') then
+							intensity = math.max(intensity,1)
+						end
+
+						if blind:FindFirstChild('IgnoreGrow') then
+							intensity = math.min(intensity,1)
+						end
+
+						blind.Size = UDim2.new(sizeuse*intensity,0,sizeuse*intensity,0)
+					end
+				end
+			end
+		end	
+	end
+end
+local function addGLaser(v)
+	if v.Name:find('GLaser') then
+		if not v:FindFirstChild('GLaserDone') then
+			checkLaser(v)
+			lasers[v] = v
+			local bv = Instance.new('BoolValue')
+			bv.Name = 'GLaserDone'
+			bv.Value = true
+			bv.Parent = v
+			v.AncestryChanged:Connect(function()
+				if not v:IsDescendantOf(game) then
+					lasers[v] = nil
+					if bv then
+						bv:Destroy()
+					end
+				end
+			end)
+		end
+	end
+end
+
+for _,v in pairs(workspace:GetDescendants()) do
+	if v:IsA('BasePart') then
+		addGLaser(v)
+	end
+end
+workspace.DescendantAdded:Connect(function(v)
+	if v:IsA('BasePart') then
+		addGLaser(v)
+	end
+end)
+
+
+
+
+game:GetService('RunService'):BindToRenderStep('GLaser',2000,function()
+	for _,v in pairs(lasers) do
+		checkLaser(v)
+	end
+end)
+
+-- TH-BETA: EXPLOSIONS & CAMERA SHAKER --
+
+local Debris = game:GetService("Debris")
+local RunService = game:GetService("RunService")
+
+local function renderStep()
+	RunService.RenderStepped:Wait()
+end
+
+ShakeDist = 10
+
+local cameraShaker = require(game.ReplicatedStorage.CameraShaker)
+local camera = workspace.CurrentCamera
+
+local camShake = cameraShaker.new(Enum.RenderPriority.Camera.Value, function(shakeCFrame)
+	camera.CFrame = camera.CFrame * shakeCFrame
+end)
+
+local function onDescendantAdded(desc)
+	if desc:IsA("Explosion") then
+		local p = Instance.new("Part")
+		p.Anchored = true
+		p.CanCollide = false
+		p.Transparency = 1
+		p.CFrame = CFrame.new(desc.Position)
+		p.Name = "ExpLight"
+		local light = Instance.new("PointLight")
+		light.Parent = p
+		light.Range = math.max(12,desc.BlastRadius)
+		light.Brightness = 10
+		light.Shadows = true
+		spawn(function ()
+			for i = 1,0,-.1 do
+				light.Color = Color3.new(1,1,i)
+				renderStep()
+			end
+			for i = 1,0,-.05 do
+				light.Color = Color3.new(i*2,i,0)
+				light.Brightness = i*10
+				renderStep()
+			end
+			light.Enabled = false
+		end)
+		p.Parent = workspace
+		while desc:IsDescendantOf(workspace) do
+			desc.AncestryChanged:Wait()
+		end
+		p:Destroy()
+
+		local ExDist = (game.Players.LocalPlayer.Character.Head.Position - desc.Position).magnitude
+		local ShakeMagnitude = ExDist/(desc.BlastRadius/8)
+		if ShakeMagnitude < ShakeDist then
+			camShake:Start()
+			camShake:ShakeOnce(desc.BlastRadius/2, 10, 0, 1.5)
+		end
+	end
+end
+
+workspace.DescendantAdded:Connect(onDescendantAdded)
+
+-- TH-BETA: BULLET PLACEMENT --
+
+local space = workspace.Terrain
+
+space.ChildAdded:Connect(function(child)
+	if child:IsA("BasePart") then
+		local anchored
+		repeat
+			if child.Velocity.Magnitude < 0.01 then
+				if not anchored then
+					coroutine.wrap(function()
+						wait(1)
+						if child.Velocity.Magnitude < 0.01 and not anchored then
+							anchored = true
+						end
+					end)()
+				end
+				if anchored then
+					child.Anchored = true
+					child.Velocity = Vector3.new(0,0,0)
+					child.CanCollide = false
+				end
+			end
+			wait(0.1)
+		until anchored
+	end
+end)
+
+-- CONTAINERS --
+
+while Death ~= true do
+	wait(0.5)
+	if PlayerHealth <= 0 or PlayerHealth == 0 then
+		Player:Kick(getMsgK())
+	end
+end
