@@ -1,6 +1,5 @@
 --!nolint GlobalUsedAsLocal
 --!nolint TableOperations
--- thanks cassie for helping me out on these nolints i never knew ( sarcs, https://luau-lang.org/lint )
 
 -- Held by https://www.apache.org/licenses/LICENSE-2.0.txt (Apache License 2.0), do not remove this instance or it will go against said directories in the Licensing.
 
