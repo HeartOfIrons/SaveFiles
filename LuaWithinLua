@@ -1,0 +1,27 @@
+
+--[[ Lua within Lua Project ]]--
+--[[ Modified 1/19/2024 ]]--
+--[[ Version 0.1.1 ]]--
+--[[ 
+Use of LWL:
+local Lua = require(game.Workspace.LWLModule)
+]]
+
+-- Use: Print(PrintStatement) |||| Console: PrintStatement - SERVER
+function Print(I)
+print("".. I .." - SERVER")
+end
+
+-- Use: Warn(WarnStatement) |||| Console: WarnStatement - SERVER
+function Warn(I)
+warn("".. I .." - SERVER")
+end
+
+-- Use: Error(ErrorStatement) |||| Console: ErrorStatement - SERVER, ERROR CALED |/| ErrorStatement - SERVER
+function Error(I,Invoke)
+if Invoke == true then
+warn("" ..I.." - SERVER, ERROR CALLED")
+elseif Invoke == false or Invoke == nil then
+error(""..I.." - SERVER"
+end
+end
