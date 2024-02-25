@@ -1,0 +1,94 @@
+
+--- Quantum Compiler ---
+--// Usage: Compile, Calculate, and Simulate quantum exchange
+--// Authors: HeartOfIrons
+
+local Configuration = {
+    Loader = true,                          --- Allow printing for loader to tell you how long it has until it's loaded
+    RepeatValuesOnChange = true,            --- Print values on change
+}
+
+local Services = {
+    RunService = game.GetService("RunService")
+}
+
+local LoaderVal = 0
+local Load = false
+
+local function Loader(n)
+    while LoaderVal <= 100 do
+        if Configuration.Loader == true then
+            print("Loading Quantum Compiler, rem: "..n.."%")
+        end
+        LoaderVal += 1
+    end
+    if LoaderVal == 100 or LoaderVal >= 100 then
+        if Configuration.Loader == true then
+        print("Quantum Compiler loaded with time of "..Services.RunService.TestCount)
+        end
+        Load = true
+    end
+end
+
+local function CompileUsage(use,type_error,bring_value1)
+    if use == "Error" and bring_value1 == "" then
+        print("Quantum Compiler returned "..type_error)
+    elseif use == "Error" and bring_value1 ~= "" then
+        print("Quantum Compiler returned "..type_error.." with values calculated as following; "..bring_value1)
+    end
+end
+
+local function Superposition(value1, value2,type_conjoin)
+    if type_conjoin == "Superposition" then
+        return value1 + value2
+    elseif type_conjoin == "Interference" then
+        return value1 * value2
+    elseif type_conjoin == "Tunneling" then
+        return value1 * math.exp(-value2)
+    elseif type_conjoin == "PhaseShift" then
+        return value1 * math.exp(1i * angle)
+    elseif type_conjoin == "CNOT" then
+        return control == 1 and 1 - target or target
+    elseif type_conjoin == "Hadamard" then
+        return value1 / math.sqrt(2)
+     elseif type_conjoin == "PauliX" then
+        return -value1
+    elseif type_conjoin == "PauliY" then
+        return value1 * 1i
+    elseif type_conjoin == "Measure" then
+        return math.random() < math.abs(value1) ^ 2 and 1 or 0
+    elseif type_conjoin == "Rotation" then
+        return value1 * math.exp(1i * value2)
+    elseif type_conjoin == "StatePreperation"
+        local qubit1 = math.random() < 0.5 and 1 or -1
+        local qubit2 = qubit1 * (math.random() < 0.5 and 1 or -1)
+        return qubit1, qubit2
+    elseif type_conjoin == "Teleportation" then
+        local bellStatePreparation = Superposition()
+        local entangledQubit = Entangle(value1, bellStatePreparation)
+    
+        local finalQubit = Superposition(entangledQubit + 6, entangledQubit, "CNOT")
+        finalQubit = Superposition(finalQubit, entangledPair[measuredResult2 + 1], "Hadamard")
+    
+        return finalQubit
+    else
+        return value1
+    end
+end 
+
+local function Entangle(value1, value2)
+    local entangledValue = value1 * math.cos(value2) + value2 * math.sin(value1)
+    return entangledValue
+end
+
+local function CalculateUsage(value1, value2,returntype)
+    local total = Calculate(value1, value2)
+    local manipulatedtotal = total * math.exp(value1)
+    CompileUsage("Error","realistic total",total)
+    CompileUsage("Error","manipulated total",manipulatedtotal)
+    if returntype == "manipulated" then
+    return manipulatedtotal
+    else
+    return total
+    end
+end
